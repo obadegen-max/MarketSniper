@@ -1,25 +1,33 @@
-function generateSignal(price, direction = "BUY") {
-  const risk = price * 0.002;
+const express = require("express");
+const { generateSignal } = require("./signals");
 
-  if (direction === "BUY") {
-    return {
-      signal: "BUY",
-      entry: Number(price.toFixed(2)),
-      sl: Number((price - risk).toFixed(2)),
-      tp: Number((price + risk * 3).toFixed(2)),
-      rr: "1:3",
-      confidence: "Setup-based — not guaranteed"
-    };
+const app = express();
+
+app.use(express.json());
+
+app.get("/", (req, res) => {
+  res.json({
+    status: "online",
+    app: "Your Trading AI",
+    message: "Signal engine is running"
+  });
+});
+
+app.get("/signal", (req, res) => {
+  const price = Number(req.query.price);
+  const direction = (req.query.direction || "BUY").toUpperCase();
+
+  if (!price || !["BUY", "SELL"].includes(direction)) {
+    return res.status(400).json({
+      error: "Use /signal?price=100&direction=BUY"
+    });
   }
 
-  return {
-    signal: "SELL",
-    entry: Number(price.toFixed(2)),
-    sl: Number((price + risk).toFixed(2)),
-    tp: Number((price - risk * 3).toFixed(2)),
-    rr: "1:3",
-    confidence: "Setup-based — not guaranteed"
-  };
-}
+  res.json(generateSignal(price, direction));
+});
 
-module.exports = { generateSignal };
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
